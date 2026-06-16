@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧁 Gerenciador da Doceria</title>
+    <style>
+        /* --- ESTILIZAÇÃO DO SISTEMA (CSS) --- */
+        :root {
+            --primary: #ff69b4;
+            --primary-hover: #ff4500;
+            --edit: #ffa500;
+            --edit-hover: #cc8400;
+            --delete: #ff4d4d;
+            --delete-hover: #cc0000;
+            --bg: #fdf6f8;
+            --card-bg: #ffffff;
+            --text: #333333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+        }
+
+        .painel {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border: 1px solid #ffe4e1;
+        }
+
+        h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #444;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .btn-salvar { background-color: var(--primary); }
+        .btn-salvar:hover { background-color: var(--primary-hover); }
+        
+        .btn-cancelar { background-color: #6c757d; display: none; }
+        .btn-cancelar:hover { background-color: #5a6268; }
+
+        /* Estilo da Lista de Pedidos */
+        .lista-pedidos {
+            max-height: 450px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .msg-vazio {
+            text-align: center;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .card-pedido {
+            background: #fff5f7;
+            border: 1px solid var(--primary);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .info-pedido p {
+            margin: 4px 0;
+        }
+
+        .botoes-card {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .botoes-card button {
+            width: 40px;
+            height: 35px;
+            padding: 0;
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .btn-edit { background-color: var(--edit); }
+        .btn-edit:hover { background-color: var(--edit-hover); }
+        .btn-delete { background-color: var(--delete); }
+        .btn-delete:hover { background-color: var(--delete-hover); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="painel">
+            <h2 id="titulo-form">🧁 Novo Pedido</h2>
+            
+            <div class="form-group">
+                <label for="cliente">Nome do Cliente:</label>
+                <input type="text" id="cliente" placeholder="Digite o nome...">
+            </div>
+
+            <div class="form-group">
+                <label for="doce">Selecione o Doce:</label>
+                <select id="doce"></select> </div>
+
+            <div class="form-group">
+                <label for="quantidade">Quantidade:</label>
+                <input type="number" id="quantidade" placeholder="Ex: 5" min="1">
+            </div>
+
+            <button id="btn-confirmar" class="btn-salvar" onclick="gerenciador.salvarPedido()">Confirmar Pedido</button>
+            <button id="btn-cancelar" class="btn-cancelar" onclick="gerenciador.limparFormulario()">Cancelar Edição</button>
+        </div>
+
+        <div class="painel">
+            <h2>📋 Pedidos Atuais</h2>
+            <div id="lista" class="lista-pedidos">
+                </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. POO: Classe que modela o Pedido (Igual ao Python)
+        class Pedido {
+            constructor(id, cliente, doce, preco, quantidade) {
+                this.id = id;
+                this.cliente = cliente;
+                this.doce = doce;
+                this.preco = preco;
+                this.quantidade = quantidade;
+                this.total = preco * quantidade;
+            }
+
+            atualizarDados(cliente, doce, preco, quantidade) {
+                this.cliente = cliente;
+                this.doce = doce;
+                this.preco = preco;
+                this.quantidade = quantidade;
+                this.total = preco * quantidade;
+            }
+        }
+
+        // 2. Tabela de Preços fixa (Dicionário do Python virou Objeto JS)
+        const TABELA_PRECOS = {
+            "Brownie": 12.0,
+            "Palha Italiana": 10.0
+        };
+
+        // 3. POO: Classe Controladora do Sistema
+        class GerenciadorPedidos {
+            constructor() {
+                this.pedidos = [];
+                this.proximoId = 1;
+                this.pedidoEmEdicao = null;
+
+                this.carregarDoArquivo();
+                this.inicializarMenuDoces();
+                this.atualizarListaTela();
+            }
+
+            // Alimenta a caixa de seleção com os doces da tabela
+            inicializarMenuDoces() {
+                const selectDoce = document.getElementById("doce");
+                for (const nome of Object.keys(TABELA_PRECOS)) {
+                    const opt = document.createElement("option");
+                    opt.value = nome;
+                    opt.textContent = `${nome} (R$ ${TABELA_PRECOS[nome].toFixed(2)})`;
+                    selectDoce.appendChild(opt);
+                }
+            }
+
+            salvarPedido() {
+                const txtCliente = document.getElementById("cliente").value.trim();
+                const txtDoce = document.getElementById("doce").value;
+                const txtQtd = document.getElementById("quantidade").value;
+
+                // Validações idênticas ao Python
+                if (!txtCliente || !txtQtd) {
+                    alert("⚠️ Atenção: Preencha todos os campos!");
+                    return;
+                }
+
+                const quantidade = parseInt(txtQtd);
+                if (isNaN(quantidade) || quantidade <= 0) {
+                    alert("❌ Erro: A quantidade deve ser um número maior que zero.");
+                    return;
+                }
+
+                const preco = TABELA_PRECOS[txtDoce];
+
+                if (this.pedidoEmEdicao === null) {
+                    // Adicionar
+                    const novo = new Pedido(this.proximoId, txtCliente, txtDoce, preco, quantidade);
+                    this.pedidos.push(novo);
+                    alert(`✅ Pedido #${this.proximoId} adicionado com sucesso!`);
+                    this.proximoId++;
+                } else {
+                    // Editar
+                    this.pedidoEmEdicao.atualizarDados(txtCliente, txtDoce, preco, quantidade);
+                    alert(`✨ Pedido #${this.pedidoEmEdicao.id} atualizado com sucesso!`);
+                    this.pedidoEmEdicao = null;
+                }
+
+                this.salvarNoArquivo();
+                this.limparFormulario();
+                this.atualizarListaTela();
+            }
+
+            prepararEdicao(id) {
+                const pedido = this.pedidos.find(p => p.id === id);
+                if (!pedido) return;
+
+                this.pedidoEmEdicao = pedido;
+
+                // Joga os dados do card de volta para as caixas de texto
+                document.getElementById("cliente").value = pedido.cliente;
+                document.getElementById("doce").value = pedido.doce;
+                document.getElementById("quantidade").value = pedido.quantidade;
+
+                // Muda o visual para Modo de Edição (Igual fizemos no CustomTkinter)
+                const tituloForm = document.getElementById("titulo-form");
+                tituloForm.textContent = `✏️ Editar Pedido #${pedido.id}`;
+                tituloForm.style.color = "var(--edit)";
+
+                const btnConfirmar = document.getElementById("btn-confirmar");
+                btnConfirmar.textContent = "Salvar Alterações";
+                btnConfirmar.style.backgroundColor = "var(--edit)";
+
+                document.getElementById("btn-cancelar").style.display = "block";
+            }
+
+            excluirPedido(id) {
+                if (confirm(`Tem certeza que deseja excluir o pedido #${id}?`)) {
+                    this.pedidos = this.pedidos.filter(p => p.id !== id);
+                    
+                    if (this.pedidoEmEdicao && this.pedidoEmEdicao.id === id) {
+                        this.limparFormulario();
+                    }
+                    if (this.pedidos.length === 0) {
+                        this.proximoId = 1; 
+                    }
+
+                    this.salvarNoArquivo();
+                    this.atualizarListaTela();
+                }
+            }
+
+            limparFormulario() {
+                this.pedidoEmEdicao = null;
+                document.getElementById("cliente").value = "";
+                document.getElementById("quantidade").value = "";
+                document.getElementById("doce").selectedIndex = 0;
+
+                // Restaura o visual padrão de "Novo Pedido"
+                const tituloForm = document.getElementById("titulo-form");
+                tituloForm.textContent = "🧁 Novo Pedido";
+                tituloForm.style.color = "#444";
+
+                const btnConfirmar = document.getElementById("btn-confirmar");
+                btnConfirmar.textContent = "Confirmar Pedido";
+                btnConfirmar.style.backgroundColor = "var(--primary)";
+
+                document.getElementById("btn-cancelar").style.display = "none";
+            }
+
+            atualizarListaTela() {
+                const divLista = document.getElementById("lista");
+                divLista.innerHTML = ""; // Limpa a tela antes de redesenhar
+
+                if (this.pedidos.length === 0) {
+                    divLista.innerHTML = '<p class="msg-vazio">Nenhum pedido na fila.</p>';
+                    return;
+                }
+
+                // Cria o HTML dos cards dinamicamente (Substitui o print do Python)
+                for (const p of this.pedidos) {
+                    const card = document.createElement("div");
+                    card.className = "card-pedido";
+                    card.innerHTML = `
+                        <div class="info-pedido">
+                            <p><strong>Pedido #${p.id}</strong> - Cliente: ${p.cliente}</p>
+                            <p>🍬 ${p.doce} (${p.quantidade}x)</p>
+                            <p><strong>💰 Total: R$ ${p.total.toFixed(2)}</strong></p>
+                        </div>
+                        <div class="botoes-card">
+                            <button class="btn-edit" onclick="gerenciador.prepararEdicao(${p.id})">✏️</button>
+                            <button class="btn-delete" onclick="gerenciador.excluirPedido(${p.id})">🗑️</button>
+                        </div>
+                    `;
+                    divLista.appendChild(card);
+                }
+            }
+
+            // ================= SALVAMENTO DE DADOS (LOCAL STORAGE) =================
+            salvarNoArquivo() {
+                localStorage.setItem("banco_doceria", JSON.stringify(this.pedidos));
+                localStorage.setItem("proximo_id_doceria", this.proximoId);
+            }
+
+            carregarDoArquivo() {
+                const dadosSalvos = localStorage.getItem("banco_doceria");
+                const idSalvo = localStorage.getItem("proximo_id_doceria");
+
+                if (dadosSalvos) {
+                    const listaCrua = JSON.parse(dadosSalvos);
+                    // Recria os objetos da classe Pedido para manter os métodos ativos
+                    this.pedidos = listaCrua.map(item => 
+                        new Pedido(item.id, item.cliente, item.doce, item.preco, item.quantidade)
+                    );
+                }
+                if (idSalvo) {
+                    this.proximoId = parseInt(idSalvo);
+                }
+            }
+        }
+
+        // Instancia o gerenciador assim que a página carrega
+        const gerenciador = new GerenciadorPedidos();
+    </script>
+</body>
+</html>
