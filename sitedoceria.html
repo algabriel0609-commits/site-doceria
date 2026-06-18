@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🧁 Gerenciador da Doceria</title>
     <style>
-        /* --- ESTILIZAÇÃO DO SISTEMA (CSS) --- */
         :root {
             --primary: #ff69b4;
             --primary-hover: #ff4500;
@@ -92,7 +91,6 @@
         .btn-cancelar { background-color: #6c757d; display: none; }
         .btn-cancelar:hover { background-color: #5a6268; }
 
-        /* Estilo da Lista de Pedidos */
         .lista-pedidos {
             max-height: 450px;
             overflow-y: auto;
@@ -172,7 +170,6 @@
     </div>
 
     <script>
-        // 1. POO: Classe que modela o Pedido (Igual ao Python)
         class Pedido {
             constructor(id, cliente, doce, preco, quantidade) {
                 this.id = id;
@@ -192,7 +189,6 @@
             }
         }
 
-        // 2. Tabela de Preços fixa (Dicionário do Python virou Objeto JS)
         const TABELA_PRECOS = {
             "Brownie": 12.0,
             "Palha Italiana": 10.0
@@ -210,7 +206,6 @@
                 this.atualizarListaTela();
             }
 
-            // Alimenta a caixa de seleção com os doces da tabela
             inicializarMenuDoces() {
                 const selectDoce = document.getElementById("doce");
                 for (const nome of Object.keys(TABELA_PRECOS)) {
@@ -241,13 +236,11 @@
                 const preco = TABELA_PRECOS[txtDoce];
 
                 if (this.pedidoEmEdicao === null) {
-                    // Adicionar
                     const novo = new Pedido(this.proximoId, txtCliente, txtDoce, preco, quantidade);
                     this.pedidos.push(novo);
                     alert(`✅ Pedido #${this.proximoId} adicionado com sucesso!`);
                     this.proximoId++;
                 } else {
-                    // Editar
                     this.pedidoEmEdicao.atualizarDados(txtCliente, txtDoce, preco, quantidade);
                     alert(`✨ Pedido #${this.pedidoEmEdicao.id} atualizado com sucesso!`);
                     this.pedidoEmEdicao = null;
@@ -264,12 +257,10 @@
 
                 this.pedidoEmEdicao = pedido;
 
-                // Joga os dados do card de volta para as caixas de texto
                 document.getElementById("cliente").value = pedido.cliente;
                 document.getElementById("doce").value = pedido.doce;
                 document.getElementById("quantidade").value = pedido.quantidade;
 
-                // Muda o visual para Modo de Edição (Igual fizemos no CustomTkinter)
                 const tituloForm = document.getElementById("titulo-form");
                 tituloForm.textContent = `✏️ Editar Pedido #${pedido.id}`;
                 tituloForm.style.color = "var(--edit)";
@@ -324,7 +315,6 @@
                     return;
                 }
 
-                // Cria o HTML dos cards dinamicamente (Substitui o print do Python)
                 for (const p of this.pedidos) {
                     const card = document.createElement("div");
                     card.className = "card-pedido";
@@ -343,7 +333,6 @@
                 }
             }
 
-            // ================= SALVAMENTO DE DADOS (LOCAL STORAGE) =================
             salvarNoArquivo() {
                 localStorage.setItem("banco_doceria", JSON.stringify(this.pedidos));
                 localStorage.setItem("proximo_id_doceria", this.proximoId);
@@ -355,7 +344,6 @@
 
                 if (dadosSalvos) {
                     const listaCrua = JSON.parse(dadosSalvos);
-                    // Recria os objetos da classe Pedido para manter os métodos ativos
                     this.pedidos = listaCrua.map(item => 
                         new Pedido(item.id, item.cliente, item.doce, item.preco, item.quantidade)
                     );
@@ -366,7 +354,6 @@
             }
         }
 
-        // Instancia o gerenciador assim que a página carrega
         const gerenciador = new GerenciadorPedidos();
     </script>
 </body>
