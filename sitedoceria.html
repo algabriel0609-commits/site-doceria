@@ -194,7 +194,6 @@
             "Palha Italiana": 10.0
         };
 
-        // 3. POO: Classe Controladora do Sistema
         class GerenciadorPedidos {
             constructor() {
                 this.pedidos = [];
@@ -221,7 +220,6 @@
                 const txtDoce = document.getElementById("doce").value;
                 const txtQtd = document.getElementById("quantidade").value;
 
-                // Validações idênticas ao Python
                 if (!txtCliente || !txtQtd) {
                     alert("⚠️ Atenção: Preencha todos os campos!");
                     return;
@@ -294,7 +292,6 @@
                 document.getElementById("quantidade").value = "";
                 document.getElementById("doce").selectedIndex = 0;
 
-                // Restaura o visual padrão de "Novo Pedido"
                 const tituloForm = document.getElementById("titulo-form");
                 tituloForm.textContent = "🧁 Novo Pedido";
                 tituloForm.style.color = "#444";
